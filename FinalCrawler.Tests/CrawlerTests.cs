@@ -10,6 +10,7 @@ using FinalCrawler.Core.Abstractions;
 using FinalCrawler.Core.Pausing;
 using FinalCrawler.Core.StopConditions;
 using FinalCrawler.Data;
+using FinalCrawler.Factories;
 using Moq;
 
 namespace FinalCrawler.Tests
@@ -32,7 +33,7 @@ namespace FinalCrawler.Tests
                 QueueNewLinks = true,
                 Seeds = new List<Uri>
                 {
-                    new Uri("https://google.com")
+                    new Uri("https://www.reddit.com/r/pics")
                 },
                 StopConditions = new List<ICrawlStopCondition>
                 {

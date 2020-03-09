@@ -77,25 +77,18 @@ namespace FinalCrawler
 
             _crawled.Clear();
 
+            _dataExtractor.LoadCustomRegexPattern(job.DataPattern);
+
             using (var browser = await _browserFactory.GetBrowser())
             {
-                var handles = new List<ManualResetEvent>();
-                var threads = new List<Thread>();
+                var tasks = new List<Task>();
                 for (var i = 0; i < Threads; i++)
                 {
-                    var handle = new ManualResetEvent(false);
-                    handles.Add(handle);
-                    var thread = new Thread(async () => await ThreadWork(browser, job, handle, cancellationToken, pauseToken));
-                    threads.Add(thread);
-                    thread.Start();
+                    tasks.Add(Task.Run(async () =>
+                        await ThreadWork(job, browser, cancellationToken, pauseToken)));
                 }
 
-                WaitHandle.WaitAll(handles.ToArray());
-
-                foreach (var thread in threads)
-                {
-                    thread.Join();
-                }
+                await Task.WhenAll(tasks);
 
                 return new CrawlReport
                 {
@@ -104,7 +97,10 @@ namespace FinalCrawler
             }
         }
 
-        private async Task ThreadWork(Browser browser, Job job, ManualResetEvent resetEvent, CancellationToken cancellationToken, PauseToken pauseToken)
+        private async Task ThreadWork(
+            Job job, 
+            Browser browser, 
+            CancellationToken cancellationToken, PauseToken pauseToken)
         {
             using (var page = await browser.NewPageAsync())
             {
@@ -125,7 +121,7 @@ namespace FinalCrawler
                     }
 
                     // wait if required by the rate limiter (per domain rate limit)
-                    //await _rateLimiter.HoldIfRequired(next);
+                    await _rateLimiter.HoldIfRequired(next);
 
                     // access the page
                     var response = await page.GoToAsync(next.ToString());
@@ -141,24 +137,31 @@ namespace FinalCrawler
                     var content = await page.GetContentAsync();
                     if (job.QueueNewLinks)
                     {
-                        var newLinks = _dataExtractor.ExtractUris(content);
+                        var newLinks = _dataExtractor.ExtractUris(next, content);
+
+                        var primedNextAbsolutePath = !next.AbsolutePath.EndsWith("/")
+                            ? next.AbsolutePath + "/"
+                            : next.AbsolutePath;
 
                         foreach (var link in newLinks)
                         {
                             // todo use bloom filter for crawled, span the beginning of the queue
-                            if (!_crawled.Contains(link) && !_queue.Contains(link) && !await _robotParser.UriForbidden(link))
+                            // must be from the same place as the crawled link, must not have been crawled already or in the queue, must be allowed to crawl the page by the robots.txt parser
+                            if (link.Host == next.Host && 
+                                link.AbsolutePath.Contains(primedNextAbsolutePath) && 
+                                !_crawled.Contains(link) && 
+                                !_queue.Contains(link) && 
+                                !await _robotParser.UriForbidden(link))
                             {
                                 _queue.Enqueue(link);
                             }
                         }
                     }
                     // get the data out 
-                    var data = _dataExtractor.ExtractData(content, job.DataPattern);
+                    var data = _dataExtractor.ExtractData(content);
                     // pass the data off to the processor, with the uri as a source
                     await _dataProcessor.ProcessData(next, data);
                 } while (!cancellationToken.IsCancellationRequested && job.StopConditions.All(sc => !sc.ShouldStop(GetCrawlReport())));
-
-                resetEvent.Set();
             }
         }
 

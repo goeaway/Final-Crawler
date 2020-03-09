@@ -27,16 +27,6 @@ namespace FinalCrawler.Web
             // add a record per request with host and time
             // if there are more than the allowed amount in the window, we wait until the oldest one goes out of the window
             // when we allow pass through we record it
-
-            var exists = _domains.TryGetValue(uri.Host, out long value);
-
-            if (!exists)
-            {
-                _domains.Add(uri.Host, _nowProvider.Now.Ticks);
-                return;
-            }
-
-
         }
     }
 }

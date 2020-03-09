@@ -6,7 +6,8 @@ namespace FinalCrawler.Abstractions.Data
 {
     public interface IDataExtractor
     {
-        IEnumerable<Uri> ExtractUris(string html);
-        IEnumerable<string> ExtractData(string html, string pattern);
+        void LoadCustomRegexPattern(string regexPattern);
+        IEnumerable<Uri> ExtractUris(Uri source, string html);
+        IEnumerable<string> ExtractData(string html);
     }
 }
