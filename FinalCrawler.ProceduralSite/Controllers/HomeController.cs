@@ -5,23 +5,35 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using FinalCrawler.ProceduralSite.Models;
+using FinalCrawler.ProceduralSite.Services;
 
 namespace FinalCrawler.ProceduralSite.Controllers
 {
     public class HomeController : Controller
     {
-        [HttpGet("{*url}")]
-        public IActionResult Index()
+        public readonly IRandomiserService _randomiser;
+
+        public HomeController(IRandomiserService randomiserService)
         {
-            // get info about what to do from url
+            _randomiser = randomiserService;
+        }
 
-            // wait for some amount of milliseconds here to simulate a real server
+        public async Task<IActionResult> Index(int seed, int wait)
+        {
+            await Task.Delay(wait);
 
-            // return a length of new links, emails, images, etc
+            return View(new DataModel
+            {
+                URLs = _randomiser.GetRandomUrls(seed).Select(u => u + "&wait=" + wait),
+                Emails = _randomiser.GetRandomEmails(seed),
+                Images = _randomiser.GetRandomImages(seed)
+            });
+        }
 
-            // the view will display them for the crawler to find
-
-            return View();
+        [HttpGet("area")]
+        public Task<IActionResult> Area(int seed, int wait)
+        {
+            return Index(seed, wait);
         }
     }
 }
