@@ -34,7 +34,7 @@ namespace FinalCrawler.Data
 
                     if (!value.StartsWith("https://") && !value.StartsWith("http://") && !value.StartsWith(source.Host))
                     {
-                        value = "http://" + source.Host + (!value.StartsWith("/") ? "/" : "") + value;
+                        value = source.Scheme + "://" + source.Host + ":" + source.Port + (!value.StartsWith("/") ? "/" : "") + value;
 
                         if (!value.EndsWith("/"))
                         {

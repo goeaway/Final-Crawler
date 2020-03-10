@@ -33,7 +33,7 @@ namespace FinalCrawler.Tests
                 QueueNewLinks = true,
                 Seeds = new List<Uri>
                 {
-                    new Uri("http://localhost:44306")
+                    new Uri("https://localhost:44306")
                 },
                 StopConditions = new List<ICrawlStopCondition>
                 {
