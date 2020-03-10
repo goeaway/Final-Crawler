@@ -137,13 +137,11 @@ namespace FinalCrawler
                     var content = await page.GetContentAsync();
                     if (job.QueueNewLinks)
                     {
-                        var newLinks = _dataExtractor.ExtractUris(next, content);
-
                         var primedNextAbsolutePath = !next.AbsolutePath.EndsWith("/")
                             ? next.AbsolutePath + "/"
                             : next.AbsolutePath;
 
-                        foreach (var link in newLinks)
+                        foreach (var link in _dataExtractor.ExtractUris(next, content))
                         {
                             // todo use bloom filter for crawled, span the beginning of the queue
                             // must be from the same place as the crawled link, must not have been crawled already or in the queue, must be allowed to crawl the page by the robots.txt parser
