@@ -1,4 +1,25 @@
-﻿@{
+﻿@model DataModel
+@{
     ViewData["Title"] = "Home Page";
 }
 
+<div>
+    @foreach (var url in Model.URLs)
+    {
+        <a href="@url">a randomly generated url</a>
+    }
+</div>
+
+<div>
+    @foreach (var email in Model.Emails)
+    {
+        <a href="mailto:@email">@email</a>
+    }
+</div>
+
+<div>
+    @foreach (var image in Model.Images)
+    {
+        <img src="@image" style="width:600px; height: auto" alt="image"/>
+    }
+</div>

@@ -7,8 +7,9 @@ namespace FinalCrawler.ProceduralSite.Services
 {
     public interface IRandomiserService
     {
-        IEnumerable<string> GetRandomUrls(int seed);
-        IEnumerable<string> GetRandomEmails(int seed);
-        IEnumerable<string> GetRandomImages(int seed);
+        int GetRandomWait();
+        IEnumerable<string> GetRandomUrls(string basePath);
+        IEnumerable<string> GetRandomEmails();
+        IEnumerable<string> GetRandomImages();
     }
 }

@@ -18,22 +18,17 @@ namespace FinalCrawler.ProceduralSite.Controllers
             _randomiser = randomiserService;
         }
 
-        public async Task<IActionResult> Index(int seed, int wait)
+        [HttpGet("{*url}")]
+        public async Task<IActionResult> Index(int wait)
         {
-            await Task.Delay(wait);
+            await Task.Delay(wait > -1 ? wait : _randomiser.GetRandomWait());
 
             return View(new DataModel
             {
-                URLs = _randomiser.GetRandomUrls(seed).Select(u => u + "&wait=" + wait),
-                Emails = _randomiser.GetRandomEmails(seed),
-                Images = _randomiser.GetRandomImages(seed)
+                URLs = _randomiser.GetRandomUrls("").Select(u => u + "&wait=" + wait),
+                Emails = _randomiser.GetRandomEmails(),
+                Images = _randomiser.GetRandomImages()
             });
-        }
-
-        [HttpGet("area")]
-        public Task<IActionResult> Area(int seed, int wait)
-        {
-            return Index(seed, wait);
         }
     }
 }

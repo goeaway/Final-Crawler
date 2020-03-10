@@ -14,8 +14,28 @@
 
 
   <ItemGroup>
-    <Folder Include="Images\" />
+    <Folder Include="wwwroot\images\" />
     <Folder Include="wwwroot\lib\" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <None Include="wwwroot\images\0.jpg" />
+    <None Include="wwwroot\images\1.jpg" />
+    <None Include="wwwroot\images\10.jpg" />
+    <None Include="wwwroot\images\11.jpg" />
+    <None Include="wwwroot\images\12.jpg" />
+    <None Include="wwwroot\images\13.jpg" />
+    <None Include="wwwroot\images\14.jpg" />
+    <None Include="wwwroot\images\15.jpg" />
+    <None Include="wwwroot\images\2.jpg" />
+    <None Include="wwwroot\images\3.jpg" />
+    <None Include="wwwroot\images\4.jpg" />
+    <None Include="wwwroot\images\5.jpg" />
+    <None Include="wwwroot\images\6.jpg" />
+    <None Include="wwwroot\images\7.jpg" />
+    <None Include="wwwroot\images\8.jpg" />
+    <None Include="wwwroot\images\9.jpg" />
   </ItemGroup>
 
 </Project>

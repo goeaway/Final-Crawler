@@ -7,26 +7,43 @@ namespace FinalCrawler.ProceduralSite.Services.Impl
 {
     public class RandomiserService : IRandomiserService
     {
-        public IEnumerable<string> GetRandomEmails(int seed)
+        public int GetRandomWait()
         {
-            var random = new Random(seed);
+            var random = new Random();
 
-            yield return random.Next() + "e@e" + random.Next() + ".com";
+            return random.Next(0, 1000);
         }
 
-        public IEnumerable<string> GetRandomImages(int seed)
+        public IEnumerable<string> GetRandomEmails()
         {
-            var possibles = new string[] { };
-            var random = new Random(seed);
+            var random = new Random();
 
-            yield return "/images/image-" + possibles[random.Next(0, possibles.Length - 1)] + ".jpg";
+            for (var i = 0; i < random.Next(2, 300); i++)
+            {
+                yield return random.Next() + "e@e" + random.Next() + ".com";
+            }
         }
 
-        public IEnumerable<string> GetRandomUrls(int seed)
+        public IEnumerable<string> GetRandomImages()
         {
-            var random = new Random(seed);
+            var random = new Random();
+            var range = Enumerable.Range(0, 15).ToList();
 
-            yield return "/" + Guid.NewGuid() + "?seed=" + seed;
+            for (var i = 0; i < random.Next(5, 500); i++)
+            {
+                yield return "/images/" + range[random.Next(0, range.Count() - 1)] + ".jpg";
+            }
+        }
+
+        public IEnumerable<string> GetRandomUrls(string basePath)
+        {
+            var random = new Random();
+
+            for (var i = 0; i < random.Next(10, 1000); i++)
+            {
+                // 66% chance the url will have the basePath in it
+                yield return (random.Next(0, 3) != 1 ? basePath : "") + (basePath != "/" ? "/" : "") + Guid.NewGuid();
+            }
         }
     }
 }
