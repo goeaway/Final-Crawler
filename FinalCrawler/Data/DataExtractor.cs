@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using FinalCrawler.Abstractions.Data;
@@ -19,7 +20,28 @@ namespace FinalCrawler.Data
 
         public IEnumerable<string> ExtractData(string html)
         {
-            throw new NotImplementedException();
+            if (html == null)
+            {
+                yield break;
+            }
+
+            if (_customRegex == null)
+            {
+                throw new InvalidOperationException("Custom Regex not defined. Custom regex must be loaded before extracting data.");
+            }
+
+            var matches = _customRegex.Matches(html);
+
+            foreach (Match match in matches)
+            {
+                if (match.Success)
+                {
+                    foreach (Group group in match.Groups)
+                    {
+                        yield return group.Value;
+                    }
+                }
+            }
         }
 
         public IEnumerable<Uri> ExtractUris(Uri source, string html)
