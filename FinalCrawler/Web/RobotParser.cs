@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using FinalCrawler.Abstractions.Web;
@@ -9,17 +10,19 @@ namespace FinalCrawler.Web
 {
     public class RobotParser : IRobotParser
     {
-        private readonly IWebAgent _webAgent;
+        private readonly HttpClient _client;
         private readonly ConcurrentDictionary<string, IEnumerable<string>> _forbiddenPaths;
 
-        public RobotParser(IWebAgent webAgent)
+        public RobotParser(HttpClient client)
         {
-            _webAgent = webAgent ?? throw new ArgumentNullException(nameof(webAgent));
+            _client = client ?? throw new ArgumentNullException(nameof(client));
             _forbiddenPaths = new ConcurrentDictionary<string, IEnumerable<string>>();
         }
 
         public async Task<bool> UriForbidden(Uri uri)
         {
+            return false;
+
             if (!_forbiddenPaths.TryGetValue(uri.Host, out IEnumerable<string> forbidden))
             {
                 // make request to get the forbidden urls
@@ -48,6 +51,8 @@ namespace FinalCrawler.Web
                     return true;
                 }
             }
+
+            return false;
         }
     }
 }

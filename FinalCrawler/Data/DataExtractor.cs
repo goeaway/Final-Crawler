@@ -8,7 +8,7 @@ namespace FinalCrawler.Data
 {
     public class DataExtractor : IDataExtractor
     {
-        private const string URI_REGEX_PATTERN = "<a.*?href=\"(.*?)\"";
+        private const string URI_REGEX_PATTERN = "<a.*?href=[\"'](.*?)[\"']";
         private readonly Regex _uriRegex = new Regex(URI_REGEX_PATTERN);
         private Regex _customRegex;
 

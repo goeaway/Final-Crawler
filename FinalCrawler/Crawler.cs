@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using FinalCrawler.Abstractions;
@@ -47,7 +48,12 @@ namespace FinalCrawler
             }
         }
 
-        public Crawler(IDataProcessor dataProcessor) : this (dataProcessor, new DefaultBrowserFactory(), new DataExtractor(), new RollingWindowRateLimiter(TimeSpan.FromSeconds(30), 100, new NowProvider()), new RobotParser()) { }
+        public Crawler(IDataProcessor dataProcessor) : this (
+            dataProcessor, 
+            new DefaultBrowserFactory(), 
+            new DataExtractor(), 
+            new RollingWindowRateLimiter(TimeSpan.FromSeconds(30), 100, new NowProvider()), 
+            new RobotParser(new HttpClient())) { }
 
         public Crawler(
             IDataProcessor dataProcessor, 
@@ -145,11 +151,11 @@ namespace FinalCrawler
                         {
                             // todo use bloom filter for crawled, span the beginning of the queue
                             // must be from the same place as the crawled link, must not have been crawled already or in the queue, must be allowed to crawl the page by the robots.txt parser
-                            if (link.Host == next.Host && 
-                                link.AbsolutePath.Contains(primedNextAbsolutePath) && 
-                                !_crawled.Contains(link) && 
-                                !_queue.Contains(link) && 
-                                !await _robotParser.UriForbidden(link))
+                            if (link.Host == next.Host 
+                                && link.AbsolutePath.Contains(primedNextAbsolutePath) 
+                                && !_crawled.Contains(link) 
+                                && !_queue.Contains(link)
+                                && !await _robotParser.UriForbidden(link))
                             {
                                 _queue.Enqueue(link);
                             }
