@@ -24,6 +24,11 @@ namespace FinalCrawler.Data
 
         public IEnumerable<Uri> ExtractUris(Uri source, string html)
         {
+            if (source == null || html == null)
+            {
+                yield break;
+            }
+
             var matches = _uriRegex.Matches(html);
 
             foreach (Match match in matches)

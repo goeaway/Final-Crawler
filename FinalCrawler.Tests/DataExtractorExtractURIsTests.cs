@@ -181,5 +181,29 @@ namespace FinalCrawler.Tests
 
             Assert.AreEqual(0, extracted.Count());
         }
+
+        [TestMethod]
+        public void ExtractUris_Returns_Empty_Collection_If_Source_Null()
+        {
+            const string html = "<a href=\"/link-to-follow\">a</a>";
+
+            var extractor = new DataExtractor();
+
+            var extracted = extractor.ExtractUris(null, html);
+
+            Assert.AreEqual(0, extracted.Count());
+        }
+
+        [TestMethod]
+        public void ExtractUris_Returns_Empty_Collection_If_HTML_Null()
+        {
+            var source = new Uri("http://source.com");
+
+            var extractor = new DataExtractor();
+
+            var extracted = extractor.ExtractUris(source, null);
+
+            Assert.AreEqual(0, extracted.Count());
+        }
     }
 }
