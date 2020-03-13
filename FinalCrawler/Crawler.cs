@@ -87,11 +87,18 @@ namespace FinalCrawler
 
             using (var browser = await _browserFactory.GetBrowser())
             {
+                var userAgent = await browser.GetUserAgentAsync();
+
                 var tasks = new List<Task>();
                 for (var i = 0; i < Threads; i++)
                 {
                     tasks.Add(Task.Run(async () =>
-                        await ThreadWork(job, browser, cancellationToken, pauseToken)));
+                        await ThreadWork(
+                            job, 
+                            browser, 
+                            userAgent,
+                            cancellationToken, 
+                            pauseToken)));
                 }
 
                 await Task.WhenAll(tasks);
@@ -106,6 +113,7 @@ namespace FinalCrawler
         private async Task ThreadWork(
             Job job, 
             Browser browser, 
+            string userAgent,
             CancellationToken cancellationToken, PauseToken pauseToken)
         {
             using (var page = await browser.NewPageAsync())
@@ -128,7 +136,6 @@ namespace FinalCrawler
 
                     // wait if required by the rate limiter (per domain rate limit)
                     await _rateLimiter.HoldIfRequired(next);
-
                     // access the page
                     var response = await page.GoToAsync(next.ToString());
                     _crawled.Add(next);

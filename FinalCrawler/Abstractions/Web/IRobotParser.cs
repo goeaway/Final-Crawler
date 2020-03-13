@@ -7,6 +7,6 @@ namespace FinalCrawler.Abstractions.Web
 {
     public interface IRobotParser
     {
-        Task<bool> UriForbidden(Uri uri);
+        Task<bool> UriForbidden(Uri uri, string userAgent);
     }
 }
