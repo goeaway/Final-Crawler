@@ -162,7 +162,7 @@ namespace FinalCrawler
                                 && link.AbsolutePath.Contains(primedNextAbsolutePath) 
                                 && !_crawled.Contains(link) 
                                 && !_queue.Contains(link)
-                                && !await _robotParser.UriForbidden(link))
+                                && !await _robotParser.UriForbidden(link, userAgent))
                             {
                                 _queue.Enqueue(link);
                             }
