@@ -34,7 +34,7 @@ namespace FinalCrawler.Web
             var existingForDomain = _domains.FirstOrDefault(d => d.Key == uri.Host);
 
             // no key yet, add a new item for this domain and add now as a first time record
-            if (!string.IsNullOrEmpty(existingForDomain.Key))
+            if (string.IsNullOrEmpty(existingForDomain.Key))
             {
                 _domains.TryAdd(uri.Host, new List<long> { _nowProvider.Now.Ticks });
                 return;
