@@ -35,17 +35,31 @@ namespace FinalCrawler.Web
                 }
             }
 
-            var testUrl = uri.AbsolutePath;
+            var testUrl = uri.PathAndQuery;
             foreach (var path in forbidden)
             {
                 // if path contains a wildcard
                 if (path.Contains("*"))
                 {
+                    // split path at the wildcard
+                    // make sure the testUrl starts with the bit before the wildcard
+                    // and make sure it ends with the bit after the wildcard
+                    var split = path.Split("*");
 
+                    if (split.Length != 2)
+                    {
+                        throw new FormatException("wildcard robot permission not in expected format");
+                    }
+
+                    var front = split[0];
+                    var back = split[1];
+
+                    if (testUrl.Length >= front.Length && testUrl.StartsWith(front) && testUrl.Contains(back))
+                    {
+                        return true;
+                    }
                 }
-
-                // if testUrl starts with the forbidden one
-                if (testUrl.Length >= path.Length && testUrl.StartsWith(path))
+                else if (testUrl.Length >= path.Length && testUrl.StartsWith(path))
                 {
                     return true;
                 }
@@ -59,7 +73,12 @@ namespace FinalCrawler.Web
         {
             if (fileText == null)
             {
-                yield break;
+                return new List<string>();
+            }
+
+            if (userAgent == null)
+            {
+                userAgent = "";
             }
 
             // split into lines (removing empties)
@@ -69,13 +88,17 @@ namespace FinalCrawler.Web
 
             var listenToThisLine = false;
 
+            var returnList = new List<string>();
+
             // find the user agent lines
             foreach (var line in splitResult)
             {
-                if (line.StartsWith("user-agent"))
+                var trimmed = line.Trim();
+
+                if (trimmed.StartsWith("user-agent"))
                 {
                     // turn off/on listening to disallows if this user-agent block is relevant to us
-                    listenToThisLine = line.Contains("*") || line.Contains(userAgent);
+                    listenToThisLine = trimmed.Contains("*") || trimmed.Replace("user-agent: ", "") == userAgent.ToLower();
                     // nothing more needed from this line, continue to next
                     continue;
                 }
@@ -84,17 +107,19 @@ namespace FinalCrawler.Web
                 {
                     // space to care about sitemaps in future
 
-                    if (line.StartsWith("disallow"))
+                    if (trimmed.StartsWith("disallow"))
                     {
-                        var url = line.Replace("disallow: ", "");
+                        var url = trimmed.Replace("disallow: ", "");
 
-                        if (!url.Contains("disallow") && !url.Contains(" ") && url.Length == 0)
+                        if (!url.Contains("disallow") && !url.Contains(" ") && url.Length != 0)
                         {
-                            yield return url;
+                            returnList.Add(url);
                         }
                     }
                 }
             }
+
+            return returnList;
         }
     }
 }
