@@ -29,12 +29,12 @@ namespace FinalCrawler
         private readonly ConcurrentQueue<Uri> _queue;
         private readonly ConcurrentBag<Uri> _crawled;
 
-        private int _threads = 1;
+        private uint _threads = 1;
 
         /// <summary>
         /// Gets or sets the amount of threads this crawler should use when crawling
         /// </summary>
-        public int Threads
+        public uint Threads
         {
             get => _threads;
             set
@@ -75,13 +75,12 @@ namespace FinalCrawler
         public async Task<CrawlReport> Crawl(Job job, CancellationToken cancellationToken, PauseToken pauseToken)
         {
             _queue.Clear();
+            _crawled.Clear();
 
             foreach (var uri in job.Seeds)
             {
                 _queue.Enqueue(uri);
             }
-
-            _crawled.Clear();
 
             _dataExtractor.LoadCustomRegexPattern(job.DataPattern);
 
@@ -118,7 +117,7 @@ namespace FinalCrawler
         {
             using (var page = await browser.NewPageAsync())
             {
-                do
+                while (!cancellationToken.IsCancellationRequested && job.StopConditions.All(sc => !sc.ShouldStop(GetCrawlReport())))
                 {
                     if (pauseToken.IsPaused)
                     {
@@ -128,14 +127,15 @@ namespace FinalCrawler
                     // get the next item from the queue
                     var next = GetNext();
 
-                    // if we didn't dequeue anything or the robots.txt for the domain denies access...
+                    // if we didn't dequeue anything, try again in a minute
                     if (next == null)
                     {
                         continue;
                     }
 
                     // wait if required by the rate limiter (per domain rate limit)
-                    await _rateLimiter.HoldIfRequired(next);
+                    //await _rateLimiter.HoldIfRequired(next);
+                    
                     // access the page
                     var response = await page.GoToAsync(next.ToString());
                     _crawled.Add(next);
@@ -172,7 +172,7 @@ namespace FinalCrawler
                     var data = _dataExtractor.ExtractData(content);
                     // pass the data off to the processor, with the uri as a source
                     await _dataProcessor.ProcessData(next, data);
-                } while (!cancellationToken.IsCancellationRequested && job.StopConditions.All(sc => !sc.ShouldStop(GetCrawlReport())));
+                }
             }
         }
 
@@ -184,7 +184,7 @@ namespace FinalCrawler
 
         private CrawlReport GetCrawlReport()
         {
-            return null;
+            return new CrawlReport();
         }
     }
 }

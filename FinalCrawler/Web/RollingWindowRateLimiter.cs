@@ -51,7 +51,7 @@ namespace FinalCrawler.Web
                 {
                     var oldest = notStale.First();
                     // wait for the oldest stamp to be older than now - window
-                    await Task.Delay(TimeSpan.FromTicks(oldest - _nowProvider.Now.Ticks - _window));
+                    await Task.Delay(TimeSpan.FromTicks(Math.Abs(oldest - _nowProvider.Now.Ticks - _window)));
                 }
 
                 // update the collection for this domain to remove stale ones

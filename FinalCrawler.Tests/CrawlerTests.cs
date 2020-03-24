@@ -5,6 +5,7 @@ using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 using FinalCrawler.Abstractions.Data;
+using FinalCrawler.Abstractions.Web;
 using FinalCrawler.Core;
 using FinalCrawler.Core.Abstractions;
 using FinalCrawler.Core.Pausing;
@@ -12,39 +13,80 @@ using FinalCrawler.Core.StopConditions;
 using FinalCrawler.Data;
 using FinalCrawler.Factories;
 using Moq;
+using FinalCrawler.Abstractions.Factories;
 
 namespace FinalCrawler.Tests
 {
     [TestClass]
+    [TestCategory("Crawler Tests")]
     public class CrawlerTests
     {
-        //[TestMethod]
-        //public async Task Crawl_CanCrawlASetOfUris()
-        //{
-        //    var dataProcessorMock = new Mock<IDataProcessor>();
+        private (Mock<IBrowserFactory>, Mock<IDataProcessor>, Mock<IDataExtractor>, Mock<IRateLimiter>, Mock<IRobotParser>) GetMocks()
+            => (
+                new Mock<IBrowserFactory>(),
+                new Mock<IDataProcessor>(), 
+                new Mock<IDataExtractor>(), 
+                new Mock<IRateLimiter>(),
+                new Mock<IRobotParser>());
 
-        //    var crawler = new Crawler(dataProcessorMock.Object);
+        private (CancellationTokenSource, PauseTokenSource) GetTokenSources()
+            => (
+                new CancellationTokenSource(),
+                new PauseTokenSource()
+                );
 
-        //    var cancelSource = new CancellationTokenSource();
-        //    var pauseSource = new PauseTokenSource();
+        [TestMethod]
+        public async Task Crawl_Can_Be_Cancelled()
+        {
+            var (mockBF, mockDP, mockDE, mockRL, mockRP) = GetMocks();
+            var crawler = new Crawler(mockDP.Object, new DefaultBrowserFactory(), mockDE.Object, mockRL.Object, mockRP.Object);
+            var (cSource, pSource) = GetTokenSources();
+            var job = new Job
+            {
+                Seeds = new List<Uri>
+                {
+                    new Uri("http://localhost")
+                },
+                StopConditions = new List<ICrawlStopCondition>
+                {
+                    new MaxTimeStopCondition(TimeSpan.MaxValue)
+                }
+            };
 
-        //    var job = new Job
-        //    {
-        //        QueueNewLinks = true,
-        //        Seeds = new List<Uri>
-        //        {
-        //            new Uri("https://localhost:44306")
-        //        },
-        //        StopConditions = new List<ICrawlStopCondition>
-        //        {
-        //            new MaxCrawlAmountStopCondition(30),
-        //            new MaxTimeStopCondition(TimeSpan.FromSeconds(10))
-        //        }
-        //    };
+            var task = crawler.Crawl(job, cSource.Token, pSource.Token);
 
-        //    var result = await crawler.Crawl(job, cancelSource.Token, pauseSource.Token);
+            Assert.IsFalse(task.IsCompleted);
+            Assert.IsFalse(task.IsCanceled);
 
-        //    Assert.AreEqual(30, result.Crawled.Count());
-        //}
+            cSource.Cancel();
+
+            await task;
+
+
+        }
+
+        [TestMethod]
+        public async Task Crawl_Can_Be_Paused()
+        {
+            var (mockBF, mockDP, mockDE, mockRL, mockRP) = GetMocks();
+            var crawler = new Crawler(mockDP.Object, mockBF.Object, mockDE.Object, mockRL.Object, mockRP.Object);
+            var (cSource, pSource) = GetTokenSources();
+            var job = new Job
+            {
+                Seeds = new List<Uri>
+                {
+                    new Uri("http://domain.com")
+                }
+            };
+
+            var task = crawler.Crawl(job, cSource.Token, pSource.Token);
+
+            Assert.IsFalse(task.IsCompleted);
+            Assert.IsFalse(task.IsCanceled);
+
+            pSource.IsPaused = true;
+
+            await task;
+        }
     }
 }

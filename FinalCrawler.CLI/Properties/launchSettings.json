@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "FinalCrawler.CLI": {
+      "commandName": "Project",
+      "commandLineArgs": "-p \"C:\\crawler create jobs here\" -t 2"
+    }
+  }
+}

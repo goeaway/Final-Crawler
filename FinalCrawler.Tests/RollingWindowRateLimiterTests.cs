@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
+using FinalCrawler.Tests.Tools;
 using FinalCrawler.Web;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -87,9 +88,21 @@ namespace FinalCrawler.Tests
         }
 
         [TestMethod]
-        [DataRow(1, 1)]
-        public async Task Holds_Until_Oldest_Passed_Window_If_Max_Reached(int windowSeconds, int max)
+        [DataRow(1, 1, 500)]
+        public async Task Holds_Until_Oldest_Passed_Window_If_Max_Reached(int windowSeconds, int max, int millStep)
         {
+            var startDate = new DateTime(2020, 01, 01);
+            var window = TimeSpan.FromSeconds(windowSeconds);
+            var nowProvider = new TestNowProvider(startDate);
+            var limiter = new RollingWindowRateLimiter(window, max, nowProvider);
+
+            for (var i = 0; i < max; i++)
+            {
+                nowProvider.Update(startDate.AddMilliseconds(i * millStep));
+                await limiter.HoldIfRequired(new Uri("http://domain.com/" + i));
+            }
+
+
         }
     }
 }

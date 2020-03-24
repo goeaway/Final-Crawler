@@ -10,7 +10,7 @@ namespace FinalCrawler.Data
     {
         public Task ProcessData(Uri source, IEnumerable<string> data)
         {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
     }
 }
