@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using FinalCrawler.Abstractions;
+using FinalCrawler.Core.Abstractions;
 
-namespace FinalCrawler
+namespace FinalCrawler.Core
 {
     public class NowProvider : INowProvider
     {

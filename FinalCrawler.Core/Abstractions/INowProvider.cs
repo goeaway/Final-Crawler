@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace FinalCrawler.Abstractions
+namespace FinalCrawler.Core.Abstractions
 {
     public interface INowProvider
     {

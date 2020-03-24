@@ -11,9 +11,6 @@ namespace FinalCrawler.Core
             = new List<Uri>();
         public bool QueueNewLinks { get; set; }
             = true;
-        public IEnumerable<ICrawlStopCondition> StopConditions { get; set; }
-            = new List<ICrawlStopCondition>();
-
         public string DataPattern { get; set; }
     }
 }

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace FinalCrawler.Core.Abstractions
 {
-    public interface ICrawlStopCondition : ISerializable
+    public interface ICrawlStopCondition
     {
         bool ShouldStop(CrawlReport report);
     }

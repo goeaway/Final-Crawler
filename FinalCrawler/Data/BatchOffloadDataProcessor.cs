@@ -8,6 +8,8 @@ namespace FinalCrawler.Data
 {
     public class BatchOffloadDataProcessor : IDataProcessor
     {
+        public int ProcessCount { get; }
+
         public Task ProcessData(Uri source, IEnumerable<string> data)
         {
             return Task.CompletedTask;

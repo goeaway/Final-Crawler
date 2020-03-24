@@ -39,17 +39,13 @@ namespace FinalCrawler.Tests
         public async Task Crawl_Can_Be_Cancelled()
         {
             var (mockBF, mockDP, mockDE, mockRL, mockRP) = GetMocks();
-            var crawler = new Crawler(mockDP.Object, new DefaultBrowserFactory(), mockDE.Object, mockRL.Object, mockRP.Object);
+            var crawler = new Crawler(mockDP.Object, new NowProvider(), new DefaultBrowserFactory(), mockDE.Object, mockRL.Object, mockRP.Object);
             var (cSource, pSource) = GetTokenSources();
             var job = new Job
             {
                 Seeds = new List<Uri>
                 {
                     new Uri("http://localhost")
-                },
-                StopConditions = new List<ICrawlStopCondition>
-                {
-                    new MaxTimeStopCondition(TimeSpan.MaxValue)
                 }
             };
 
@@ -69,7 +65,7 @@ namespace FinalCrawler.Tests
         public async Task Crawl_Can_Be_Paused()
         {
             var (mockBF, mockDP, mockDE, mockRL, mockRP) = GetMocks();
-            var crawler = new Crawler(mockDP.Object, mockBF.Object, mockDE.Object, mockRL.Object, mockRP.Object);
+            var crawler = new Crawler(mockDP.Object, new NowProvider(), mockBF.Object, mockDE.Object, mockRL.Object, mockRP.Object);
             var (cSource, pSource) = GetTokenSources();
             var job = new Job
             {

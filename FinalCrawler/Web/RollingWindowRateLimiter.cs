@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using FinalCrawler.Abstractions;
 using FinalCrawler.Abstractions.Web;
+using FinalCrawler.Core.Abstractions;
 
 namespace FinalCrawler.Web
 {

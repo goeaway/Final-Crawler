@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -10,7 +11,9 @@ using FinalCrawler.Abstractions.Data;
 using FinalCrawler.Abstractions.Factories;
 using FinalCrawler.Abstractions.Web;
 using FinalCrawler.Core;
+using FinalCrawler.Core.Abstractions;
 using FinalCrawler.Core.Pausing;
+using FinalCrawler.Core.StopConditions;
 using FinalCrawler.Data;
 using FinalCrawler.Factories;
 using FinalCrawler.Web;
@@ -25,9 +28,11 @@ namespace FinalCrawler
         private readonly IDataProcessor _dataProcessor;
         private readonly IRateLimiter _rateLimiter;
         private readonly IRobotParser _robotParser;
+        private readonly INowProvider _nowProvider;
 
         private readonly ConcurrentQueue<Uri> _queue;
         private readonly ConcurrentBag<Uri> _crawled;
+        private readonly Stopwatch _stopwatch;
 
         private uint _threads = 1;
 
@@ -48,15 +53,17 @@ namespace FinalCrawler
             }
         }
 
-        public Crawler(IDataProcessor dataProcessor) : this (
+        public Crawler(IDataProcessor dataProcessor, INowProvider nowProvider) : this (
             dataProcessor, 
+            nowProvider,
             new DefaultBrowserFactory(), 
             new DataExtractor(), 
-            new RollingWindowRateLimiter(TimeSpan.FromSeconds(30), 100, new NowProvider()), 
+            new RollingWindowRateLimiter(TimeSpan.FromSeconds(30), 100, nowProvider), 
             new RobotParser(new HttpClient())) { }
 
         public Crawler(
             IDataProcessor dataProcessor, 
+            INowProvider nowProvider,
             IBrowserFactory browserFactory, 
             IDataExtractor dataExtractor, 
             IRateLimiter rateLimiter,
@@ -67,57 +74,58 @@ namespace FinalCrawler
             _dataProcessor = dataProcessor ?? throw new ArgumentNullException(nameof(dataProcessor));
             _rateLimiter = rateLimiter ?? throw new ArgumentNullException(nameof(rateLimiter));
             _robotParser = robotParser ?? throw new ArgumentNullException(nameof(robotParser));
+            _nowProvider = nowProvider ?? throw new ArgumentNullException(nameof(nowProvider));
 
             _queue = new ConcurrentQueue<Uri>();
             _crawled = new ConcurrentBag<Uri>();
+            _stopwatch = new Stopwatch();
         }
 
         public async Task<CrawlReport> Crawl(Job job, CancellationToken cancellationToken, PauseToken pauseToken)
         {
             _queue.Clear();
-            _crawled.Clear();
-
             foreach (var uri in job.Seeds)
             {
                 _queue.Enqueue(uri);
             }
+
+            _crawled.Clear();
+            _stopwatch.Restart();
 
             _dataExtractor.LoadCustomRegexPattern(job.DataPattern);
 
             using (var browser = await _browserFactory.GetBrowser())
             {
                 var userAgent = await browser.GetUserAgentAsync();
+                var stopConditions = CreateStopConditions(job);
 
-                var tasks = new List<Task>();
-                for (var i = 0; i < Threads; i++)
-                {
-                    tasks.Add(Task.Run(async () =>
-                        await ThreadWork(
-                            job, 
-                            browser, 
+                var tasks = Enumerable
+                    .Range(0, (int)Threads)
+                    .Select(i => ThreadWork(
+                            job,
+                            stopConditions,
+                            browser,
                             userAgent,
-                            cancellationToken, 
-                            pauseToken)));
-                }
+                            cancellationToken,
+                            pauseToken));
 
                 await Task.WhenAll(tasks);
 
-                return new CrawlReport
-                {
-
-                };
+                _stopwatch.Stop();
+                return GetCrawlReport();
             }
         }
 
         private async Task ThreadWork(
             Job job, 
+            IEnumerable<ICrawlStopCondition> stopConditions,
             Browser browser, 
             string userAgent,
             CancellationToken cancellationToken, PauseToken pauseToken)
         {
             using (var page = await browser.NewPageAsync())
             {
-                while (!cancellationToken.IsCancellationRequested && job.StopConditions.All(sc => !sc.ShouldStop(GetCrawlReport())))
+                while (!cancellationToken.IsCancellationRequested && stopConditions.All(sc => !sc.ShouldStop(GetCrawlReport())))
                 {
                     if (pauseToken.IsPaused)
                     {
@@ -184,7 +192,22 @@ namespace FinalCrawler
 
         private CrawlReport GetCrawlReport()
         {
-            return new CrawlReport();
+            return new CrawlReport
+            {
+                Crawled =  _crawled,
+                DataExtractionCount = _dataProcessor.ProcessCount,
+                TimeElapsed = _stopwatch.Elapsed
+            };
+        }
+
+        private IEnumerable<ICrawlStopCondition> CreateStopConditions(Job job)
+        {
+            return new List<ICrawlStopCondition>
+            {
+                new MaxTimeStopCondition(TimeSpan.FromDays(7)),
+                new MaxCrawlAmountStopCondition(1_000_000_000),
+                new CrawledProgressTimeoutStopCondition(TimeSpan.FromSeconds(10), _nowProvider)
+            };
         }
     }
 }

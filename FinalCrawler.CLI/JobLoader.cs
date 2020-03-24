@@ -4,13 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using FinalCrawler.CLI.Abstractions;
 using FinalCrawler.Core;
 using Newtonsoft.Json;
 
-namespace FinalCrawler.CLI.Impl
+namespace FinalCrawler.CLI
 {
-    internal class JobLoader : IJobLoader
+    internal class JobLoader
     {
         public Task DeleteJob(string path)
         {

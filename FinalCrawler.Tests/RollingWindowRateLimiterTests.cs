@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
+using FinalCrawler.Core;
 using FinalCrawler.Tests.Tools;
 using FinalCrawler.Web;
 using Microsoft.VisualStudio.TestTools.UnitTesting;

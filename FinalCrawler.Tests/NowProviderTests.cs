@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using FinalCrawler.Core;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace FinalCrawler.Tests

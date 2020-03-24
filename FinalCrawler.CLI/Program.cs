@@ -1,16 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
-using FinalCrawler.CLI.Impl;
 using FinalCrawler.Core;
-using FinalCrawler.Core.Abstractions;
 using FinalCrawler.Core.Pausing;
-using FinalCrawler.Core.StopConditions;
 using FinalCrawler.Data;
-using Newtonsoft.Json;
 
 namespace FinalCrawler.CLI
 {
@@ -43,7 +38,7 @@ namespace FinalCrawler.CLI
 
                     var jobLoader = new JobLoader();
                     var dataProcessor = new BatchOffloadDataProcessor();
-                    var crawler = new Crawler(dataProcessor)
+                    var crawler = new Crawler(dataProcessor, new NowProvider())
                     {
                         Threads = o.Threads
                     };
@@ -110,6 +105,8 @@ namespace FinalCrawler.CLI
                     //    Console.WriteLine($"Processing {(pauseSource.IsPaused ? "paused" : "resumed")}");
                     //}
                 }
+
+                Thread.Sleep(10);
             }
 
             var result = await crawlTask;

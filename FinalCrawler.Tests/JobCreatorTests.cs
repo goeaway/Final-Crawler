@@ -27,11 +27,6 @@ namespace FinalCrawler.Tests
                 },
                 DataPattern = "<img.*?src=\"(.*?)\"",
                 QueueNewLinks = true,
-                StopConditions = new List<ICrawlStopCondition>
-                {
-                    new MaxTimeStopCondition(TimeSpan.FromSeconds(20)),
-                    new MaxCrawlAmountStopCondition(5000)
-                }
             };
 
             using (var file = File.Create(Path.Combine(SAVE_PATH, Guid.NewGuid().ToString() + ".fc.json")))

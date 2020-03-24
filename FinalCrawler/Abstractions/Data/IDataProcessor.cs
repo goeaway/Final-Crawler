@@ -7,6 +7,7 @@ namespace FinalCrawler.Abstractions.Data
 {
     public interface IDataProcessor
     {
+        int ProcessCount { get; }
         Task ProcessData(Uri source, IEnumerable<string> data);
     }
 }
