@@ -23,6 +23,11 @@ namespace FinalCrawler
 {
     public class Crawler
     {
+        private const int BLOOM_FILTER_MAX = 10_000_000;
+        private const int DEFAULT_MAX_CRAWL = 1_000_000;
+        private TimeSpan DEFAULT_MAX_CRAWL_TIME = TimeSpan.FromDays(7);
+        private TimeSpan DEFAULT_CRAWL_NO_PROGRESS_LIMIT = TimeSpan.FromSeconds(10);
+
         private readonly IBrowserFactory _browserFactory;
         private readonly IDataExtractor _dataExtractor;
         private readonly IDataProcessor _dataProcessor;
@@ -30,6 +35,7 @@ namespace FinalCrawler
         private readonly IRobotParser _robotParser;
         private readonly INowProvider _nowProvider;
 
+        private IBloomFilter _crawledFilter;
         private readonly ConcurrentQueue<Uri> _queue;
         private readonly ConcurrentBag<Uri> _crawled;
         private readonly Stopwatch _stopwatch;
@@ -83,6 +89,8 @@ namespace FinalCrawler
 
         public async Task<CrawlReport> Crawl(Job job, CancellationToken cancellationToken, PauseToken pauseToken)
         {
+            _crawledFilter = new RichardKundlBloomFilter(BLOOM_FILTER_MAX);
+
             _queue.Clear();
             foreach (var uri in job.Seeds)
             {
@@ -136,50 +144,51 @@ namespace FinalCrawler
                     var next = GetNext();
 
                     // if we didn't dequeue anything, try again in a minute
-                    if (next == null)
+                    // if this one has already been done, skip it (we check when adding it as well below, but there's a chance it could have been crawled already by the time we get back to here with it)
+                    // we check for non containment to avoid false positives, we can know for sure if something is NOT in the filter
+                    // but it could potentially think something is in the filter when it's not
+                    if (next != null && !_crawledFilter.Contains(next.AbsolutePath))
                     {
-                        continue;
-                    }
+                        // wait if required by the rate limiter (per domain rate limit)
+                        //await _rateLimiter.HoldIfRequired(next);
+                        
+                        // access the page
+                        var response = await page.GoToAsync(next.ToString());
+                        _crawled.Add(next);
+                        _crawledFilter.Add(next.AbsolutePath);
 
-                    // wait if required by the rate limiter (per domain rate limit)
-                    //await _rateLimiter.HoldIfRequired(next);
-                    
-                    // access the page
-                    var response = await page.GoToAsync(next.ToString());
-                    _crawled.Add(next);
-
-                    if (!response.Ok)
-                    {
-                        // create a log of big errors?
-                        continue;
-                    }
-
-                    // retrieve the page's content
-                    var content = await page.GetContentAsync();
-                    if (job.QueueNewLinks)
-                    {
-                        var primedNextAbsolutePath = !next.AbsolutePath.EndsWith("/")
-                            ? next.AbsolutePath + "/"
-                            : next.AbsolutePath;
-
-                        foreach (var link in _dataExtractor.ExtractUris(next, content))
+                        if (!response.Ok)
                         {
-                            // todo use bloom filter for crawled, span the beginning of the queue
-                            // must be from the same place as the crawled link, must not have been crawled already or in the queue, must be allowed to crawl the page by the robots.txt parser
-                            if (link.Host == next.Host 
-                                && link.AbsolutePath.Contains(primedNextAbsolutePath) 
-                                && !_crawled.Contains(link) 
-                                && !_queue.Contains(link)
-                                && !await _robotParser.UriForbidden(link, userAgent))
+                            // create a log of big errors?
+                            continue;
+                        }
+
+                        // retrieve the page's content
+                        var content = await page.GetContentAsync();
+                        if (job.QueueNewLinks)
+                        {
+                            var primedNextAbsolutePath = !next.AbsolutePath.EndsWith("/")
+                                ? next.AbsolutePath + "/"
+                                : next.AbsolutePath;
+
+                            foreach (var link in _dataExtractor.ExtractUris(next, content))
                             {
-                                _queue.Enqueue(link);
+                                // todo use bloom filter for crawled, span the beginning of the queue
+                                // must be from the same place as the crawled link, must not have been crawled already or in the queue, must be allowed to crawl the page by the robots.txt parser
+                                if (link.Host == next.Host 
+                                    && link.AbsolutePath.Contains(primedNextAbsolutePath) 
+                                    && !_crawledFilter.Contains(link.AbsolutePath)
+                                    && !await _robotParser.UriForbidden(link, userAgent))
+                                {
+                                    _queue.Enqueue(link);
+                                }
                             }
                         }
+                        // get the data out 
+                        var data = _dataExtractor.ExtractData(content);
+                        // pass the data off to the processor, with the uri as a source
+                        await _dataProcessor.ProcessData(next, data);
                     }
-                    // get the data out 
-                    var data = _dataExtractor.ExtractData(content);
-                    // pass the data off to the processor, with the uri as a source
-                    await _dataProcessor.ProcessData(next, data);
                 }
             }
         }
@@ -204,9 +213,9 @@ namespace FinalCrawler
         {
             return new List<ICrawlStopCondition>
             {
-                new MaxTimeStopCondition(TimeSpan.FromDays(7)),
-                new MaxCrawlAmountStopCondition(1_000_000_000),
-                new CrawledProgressTimeoutStopCondition(TimeSpan.FromSeconds(10), _nowProvider)
+                new MaxTimeStopCondition(DEFAULT_MAX_CRAWL_TIME),
+                new MaxCrawlAmountStopCondition(DEFAULT_MAX_CRAWL),
+                new CrawledProgressTimeoutStopCondition(DEFAULT_CRAWL_NO_PROGRESS_LIMIT, _nowProvider)
             };
         }
     }

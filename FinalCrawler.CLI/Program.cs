@@ -48,7 +48,7 @@ namespace FinalCrawler.CLI
                     // files are deleted once processing is complete
                     if (File.GetAttributes(o.Path).HasFlag(FileAttributes.Directory))
                     {
-                        while (true)
+                        while (!_cancelSource.IsCancellationRequested)
                         {
                             if (Console.KeyAvailable)
                             {
@@ -73,7 +73,7 @@ namespace FinalCrawler.CLI
                             }
                             else
                             {
-                                await Task.Delay(10);
+                                Thread.Sleep(10);
                             }
                         }
                     }
